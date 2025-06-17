@@ -1,0 +1,73 @@
+// Firestore Security Rules untuk Kinclongin App
+// Copy rules ini ke Firebase Console > Firestore Database > Rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users collection - users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow admin to read all users
+      allow read: if request.auth != null && isAdmin();
+    }
+    
+    // Services collection - read access for all authenticated users, write for admin only
+    match /services/{serviceId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
+    }
+    
+    // Orders collection - users can read/write their own orders, admin can read all
+    match /orders/{orderId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.customerId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && 
+        request.resource.data.customerId == request.auth.uid;
+    }
+    
+    // Laundry services collection (legacy) - read for all, write for admin
+    match /laundry_services/{serviceId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
+    }
+    
+    // Promotions collection - read for all, write for admin
+    match /promotions/{promoId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
+    }
+    
+    // Laundry photos collection - read/write for authenticated users
+    match /laundry_photos/{photoId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Payment proofs collection - read/write for authenticated users
+    match /payment_proofs/{proofId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+  }
+}
+
+// CARA SETUP:
+// 1. Buka Firebase Console: https://console.firebase.google.com
+// 2. Pilih project kinclongin-6308d
+// 3. Klik "Firestore Database" di sidebar
+// 4. Klik tab "Rules"
+// 5. Replace rules yang ada dengan rules di atas
+// 6. Klik "Publish"
+
+// PENJELASAN RULES:
+// - Users: Hanya bisa akses data sendiri, admin bisa baca semua
+// - Services: Semua user bisa baca, hanya admin yang bisa tulis
+// - Orders: User bisa akses order sendiri, admin bisa akses semua
+// - Laundry photos & Payment proofs: Semua authenticated user bisa akses
+// - Function isAdmin(): Cek apakah user memiliki role 'Admin' di collection users
