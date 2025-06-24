@@ -1,6 +1,8 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class MapService {
   static Future<bool> requestLocationPermission() async {
@@ -43,11 +45,23 @@ class MapService {
 
   static Future<String> getAddressFromCoordinates(LatLng coordinates) async {
     try {
-      // For now, return coordinates as string
-      // In production, you would use a geocoding service
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=${coordinates.latitude}&lon=${coordinates.longitude}&zoom=18&addressdetails=1',
+      );
+      final response = await http.get(url, headers: {
+        'User-Agent': 'kinclongin-app/1.0 (your_email@example.com)'
+      });
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final address = data['display_name'];
+        if (address != null && address is String && address.isNotEmpty) {
+          return address;
+        }
+      }
       return '${coordinates.latitude.toStringAsFixed(6)}, ${coordinates.longitude.toStringAsFixed(6)}';
     } catch (e) {
-      return 'Unknown location';
+      print('Error reverse geocoding: $e');
+      return '${coordinates.latitude.toStringAsFixed(6)}, ${coordinates.longitude.toStringAsFixed(6)}';
     }
   }
 

@@ -301,6 +301,11 @@ class AddPictureProvider with ChangeNotifier {
     }
   }
 
+  // Public setter for image file (for upload flow)
+  void setImageFile(File file) {
+    _imageFile = file;
+  }
+
   // Clear all images
   void clearAllImages() {
     _selectedImages.clear();

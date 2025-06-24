@@ -173,32 +173,62 @@ class _AddPicturePageState extends State<AddPicturePage> {
                 SizedBox(
                   width: double.infinity,
                   height: 50,
-                  child: ElevatedButton(
-                    onPressed: provider.selectedImages.isNotEmpty
-                        ? () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const CheckoutPage(),
+                  child: Consumer2<AddPictureProvider, CheckoutProvider>(
+                    builder: (context, pictureProvider, checkoutProvider, _) {
+                      return ElevatedButton(
+                        onPressed: pictureProvider.selectedImages.isNotEmpty && !pictureProvider.isUploading
+                            ? () async {
+                                // Show loading dialog
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => const Center(child: CircularProgressIndicator()),
+                                );
+                                // Set the image file for upload
+                                pictureProvider.setImageFile(pictureProvider.selectedImages.first);
+                                final url = await pictureProvider.uploadLaundryPhoto();
+                                Navigator.of(context).pop(); // Remove loading dialog
+                                if (url != null) {
+                                  checkoutProvider.setLaundryPhotoUrl(url);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const CheckoutPage(),
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Failed to upload photo. Please try again.'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          disabledBackgroundColor: Colors.grey.shade300,
+                        ),
+                        child: pictureProvider.isUploading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Text(
+                                'Continue to Checkout',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            );
-                          }
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      disabledBackgroundColor: Colors.grey.shade300,
-                    ),
-                    child: const Text(
-                      'Continue to Checkout',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
               ],

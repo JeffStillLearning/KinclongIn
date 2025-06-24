@@ -133,8 +133,8 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
                 FlutterMap(
                   mapController: _mapController,
                   options: MapOptions(
-                    center: _selectedLocation,
-                    zoom: 15.0,
+                    initialCenter: _selectedLocation,
+                    initialZoom: 15.0,
                     onTap: _onMapTap,
                   ),
                   children: [

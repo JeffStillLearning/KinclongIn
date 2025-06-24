@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:kinclongin/services/map_service.dart';
 
 class LocationProvider extends ChangeNotifier {
   LatLng? _currentLocation;
@@ -9,6 +10,7 @@ class LocationProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   bool _hasLocationPermission = false;
+  String? _selectedAddress;
 
   // Getters
   LatLng? get currentLocation => _currentLocation;
@@ -16,6 +18,7 @@ class LocationProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get hasLocationPermission => _hasLocationPermission;
+  String? get selectedAddress => _selectedAddress;
 
   // Default location (Jember, Indonesia)
   static const LatLng defaultLocation = LatLng(-8.1652, 113.7231);
@@ -102,25 +105,30 @@ class LocationProvider extends ChangeNotifier {
       );
 
       _currentLocation = LatLng(position.latitude, position.longitude);
-      
       // Set selected location to current location if not already set
       if (_selectedLocation == null) {
         _selectedLocation = _currentLocation;
       }
-
-      _isLoading = false;
+      _selectedAddress = null;
+      notifyListeners();
+      // Reverse geocode current location
+      _selectedAddress = await MapService.getAddressFromCoordinates(_currentLocation!);
       notifyListeners();
     } catch (e) {
       _errorMessage = 'Error getting current location: $e';
       _currentLocation = defaultLocation;
       _selectedLocation = defaultLocation;
+      _selectedAddress = null;
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  void setSelectedLocation(LatLng location) {
+  void setSelectedLocation(LatLng location) async {
     _selectedLocation = location;
+    _selectedAddress = null;
+    notifyListeners();
+    _selectedAddress = await MapService.getAddressFromCoordinates(location);
     notifyListeners();
   }
 
@@ -131,6 +139,7 @@ class LocationProvider extends ChangeNotifier {
 
   String getLocationString(LatLng? location) {
     if (location == null) return 'No location selected';
+    if (_selectedAddress != null) return _selectedAddress!;
     return 'Lat: ${location.latitude.toStringAsFixed(6)}, Lng: ${location.longitude.toStringAsFixed(6)}';
   }
 
